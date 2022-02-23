@@ -1,6 +1,9 @@
 import pyqtgraph as pg
 import numpy as np
 from pyqtgraph.Qt import QtCore
+
+from slsdet import Eiger
+from receiver import QuadZmqReceiver
 pg.setConfigOptions(imageAxisOrder='row-major')
 pg.mkQApp()
 win = pg.GraphicsLayoutWidget()
@@ -26,11 +29,12 @@ p1.autoRange()
 p1.setAspectLocked(True)
 
 
-
+zmq_receiver = QuadZmqReceiver(Eiger())
 
 def update():
     levels = hist.getLevels()
-    img.setImage(np.random.rand(512,512))
+    image = zmq_receiver.read_frame()
+    img.setImage(image)
     hist.setLevels(*levels)
     
     #app.processEvents()  ## force complete redraw for every plot

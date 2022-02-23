@@ -57,6 +57,10 @@ class QuadZmqReceiver:
 
 if __name__ == "__main__":
     from slsdet import Eiger
+    import matplotlib.pyplot as plt
+    plt.ion()
     d = Eiger()
     r = QuadZmqReceiver(d)
     image = r.read_frame()
+    plt.imshow(image)
+    plt.clim(0,100)
