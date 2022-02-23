@@ -27,7 +27,7 @@ win.show()
 
 p1.autoRange()  
 p1.setAspectLocked(True)
-
+hist.setLevels(0,300)
 
 zmq_receiver = QuadZmqReceiver(Eiger())
 

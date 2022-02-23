@@ -53,6 +53,10 @@ class QuadZmqReceiver:
                 image[p] = tmp2.reshape(256,512)
             else:
                 image[p] = np.frombuffer(data, dtype = get_dtype(header['bitmode'])).reshape(256,512)
+        
+        
+        image[self.mask[1]] = image[self.mask[1]][::-1, :]
+        
         return image
 
 if __name__ == "__main__":
