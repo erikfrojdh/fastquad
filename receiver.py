@@ -31,7 +31,7 @@ class QuadZmqReceiver:
         ip = detector.rx_zmqip
         ports = detector.rx_zmqport[0::2] #Skipping the switched off ports
         self.context = zmq.Context()
-        self.sockets = [ self.context.socket(zmq.SUB) for p in self.ports ]
+        self.sockets = [ self.context.socket(zmq.SUB) for p in ports ]
         for p,s in zip(ports, self.sockets):
             print('Initializing: {:d}'.format(p))
             s.connect('tcp://{:s}:{:d}'.format(ip.str(), p))
