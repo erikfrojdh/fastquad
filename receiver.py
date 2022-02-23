@@ -24,27 +24,37 @@ def get_dtype(dr):
         raise TypeError(f'Bitdepth: {dr} not supported')
 
 class QuadZmqReceiver:
-    
-    def __init__(self, detector):
+    def __init__(self, ip, ports):
         self.mask = [(slice(0,256,1),slice(0,512,1)),
                     (slice(256,512,1),slice(0,512,1))]
-        ip = detector.rx_zmqip
-        ports = detector.rx_zmqport[0::2] #Skipping the switched off ports
+
         self.context = zmq.Context()
         self.sockets = [ self.context.socket(zmq.SUB) for p in ports ]
         for p,s in zip(ports, self.sockets):
-            print('Initializing: {:d}'.format(p))
-            s.connect('tcp://{:s}:{:d}'.format(ip.str(), p))
+            endpoint = f'tcp://{ip}:{p}'
+            print(f'Connecting: {endpoint}')
+            s.connect(endpoint)
             s.setsockopt(zmq.SUBSCRIBE, b'')
+            s.setsockopt(zmq.RCVTIMEO, 100) #Wait 100ms
 
     def read_frame(self):
-
-        image = np.zeros((512,512)) #np.double
+        """Read one frame from the two zmq streams"""
+        image = np.zeros((512,512))
 
         for p,s in zip(self.mask, self.sockets):
-            header = json.loads( s.recv()[0:-1] )
-            data = s.recv()
-            end = json.loads( s.recv()[0:-1] )
+            while True:
+                msg = s.recv_multipart()
+                if len(msg) == 2:
+                    #We have header and data
+                    break
+                else:
+                    #Special case dummy message at the end of acq, try to read next frame
+                    pass
+
+
+            header = json.loads(msg[0])
+            data = msg[1]
+
             if header['bitmode'] == 4:
                 tmp = np.frombuffer(data, dtype=np.uint8)
                 tmp2 = np.zeros(tmp.size*2, dtype = tmp.dtype)
@@ -54,17 +64,5 @@ class QuadZmqReceiver:
             else:
                 image[p] = np.frombuffer(data, dtype = get_dtype(header['bitmode'])).reshape(256,512)
         
-        
-        image[self.mask[1]] = image[self.mask[1]][::-1, :]
-        
+        image[self.mask[0]] = np.flipud(image[self.mask[0]])
         return image
-
-if __name__ == "__main__":
-    from slsdet import Eiger
-    import matplotlib.pyplot as plt
-    plt.ion()
-    d = Eiger()
-    r = QuadZmqReceiver(d)
-    image = r.read_frame()
-    plt.imshow(image)
-    plt.clim(0,100)

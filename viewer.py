@@ -1,44 +1,64 @@
-import pyqtgraph as pg
+
 import numpy as np
+import ctypes
+import multiprocessing as mp
+import zmq
+import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore
 
-from slsdet import Eiger
 from receiver import QuadZmqReceiver
+
 pg.setConfigOptions(imageAxisOrder='row-major')
 pg.mkQApp()
 win = pg.GraphicsLayoutWidget()
 win.setWindowTitle('EIGER')
-
-
 p1 = win.addPlot(title="")
-img = pg.ImageItem(colorMap = 'viridis')
+img = pg.ImageItem()
 p1.addItem(img)
-
 hist = pg.HistogramLUTItem()
 hist.setImageItem(img)
 hist.gradient.loadPreset('viridis')
 win.addItem(hist)
 
+#Some initial data
 data = np.random.rand(512,512)
 img.setImage(data)
 
 win.resize(900, 800)
 win.show()
 
-p1.autoRange()  
 p1.setAspectLocked(True)
-hist.setLevels(0,300)
+hist.setLevels(0,255)
 
-zmq_receiver = QuadZmqReceiver(Eiger())
+ip = "128.178.66.100"
+ports = [30001, 30003]
+
+
+def read_stream(buffer, exit_flag):
+    """Read images from the receiver zmq stream"""
+    zmq_receiver = QuadZmqReceiver(ip, ports)
+    while not exit_flag.value:
+        #Try to read an image, if timeout then try again
+        try:
+            tmp = zmq_receiver.read_frame()
+            with buffer.get_lock():
+                image = np.frombuffer(buffer.get_obj(), dtype=np.double).reshape(
+                    512,512
+                )
+                np.copyto(image, tmp)
+        except zmq.error.Again:
+            pass
+
+
 
 def update():
     levels = hist.getLevels()
-    image = zmq_receiver.read_frame()
-    img.setImage(image)
+    with buffer.get_lock():
+        image = np.frombuffer(buffer.get_obj(), dtype=np.double).reshape(
+                512,512
+            )
+        img.setImage(image)
     hist.setLevels(*levels)
-    
-    #app.processEvents()  ## force complete redraw for every plot
-
 
 
 def imageHoverEvent(event):
@@ -56,10 +76,24 @@ def imageHoverEvent(event):
 
 img.hoverEvent = imageHoverEvent
 
-
+#Timer to update the image, this is separate from the reciving
+#We could check and only update if we have a new image...
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
 timer.start(100)
 
 if __name__ == '__main__':
+    #This flag is used to inform the reader when to exit
+    exit_flag = mp.Value(ctypes.c_bool)
+    exit_flag.value = False 
+
+    buffer = mp.Array(ctypes.c_double, 512*512)
+    reader = mp.Process(target=read_stream, args=[buffer, exit_flag])
+    reader.start()
+
+    #Run the event loop for the GUI 
     pg.exec()
+
+    #When the window is closed tell the reader loop to exit
+    exit_flag.value = True
+    reader.join()
