@@ -5,7 +5,7 @@ from slsdet import Eiger
 
 
 
-d = Eiger()s
+d = Eiger()
 d.fwrite = False
 d.exptime = 245e-6
 d.period = 250e-6
