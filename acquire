@@ -20,5 +20,5 @@ fpath = Path(d.fpath)/f'{d.fname}_master_{d.findex}.raw'
 d.acquire()
 
 #convert to hdf5 and add gap pixelss
-subprocess.run(['raw2hdf5', fpath.as_posix(), fpath/'hdf5'])
+subprocess.run(['raw2hdf5', fpath.as_posix(), fpath.parent/'hdf5'])
 
