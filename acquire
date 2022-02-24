@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+import argparse
+from slsdet import Eiger
+
+parser = argparse.ArgumentParser()
+parser.add_argument("n_frames", type = int)
+args = parser.parse_args()
+d = Eiger()
+d.stopDetector()
+d.stopReceiver()
+
+d.fwrite = True
+d.frames = args.n_frames
+
+d.acquire()
+
+s

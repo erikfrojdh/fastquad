@@ -76,7 +76,7 @@ def imageHoverEvent(event):
 
 img.hoverEvent = imageHoverEvent
 
-#Timer to update the image, this is separate from the reciving
+#Timer to update the image, this is separate from the receiving
 #We could check and only update if we have a new image...
 timer = QtCore.QTimer()
 timer.timeout.connect(update)

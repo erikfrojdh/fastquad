@@ -3,15 +3,8 @@ import zmq
 import json
 import numpy as np
 
-def get_dtype(dr):
-    """
-    Returns the correct numpy dtype from a number or string
-    Note this dtype is used for storing data and is not neccessary the
-    same as the number asked for
-    """
-    if isinstance(dr, str):
-        dr = int(dr)
-        
+def get_storage_dtype(dr):
+    dr = int(dr) #in case string was passed in
     if dr == 32:
         return np.int32
     elif dr == 16:
@@ -62,7 +55,7 @@ class QuadZmqReceiver:
                 tmp2[1::2] = np.bitwise_and(tmp >> 4, 0x0f)
                 image[p] = tmp2.reshape(256,512)
             else:
-                image[p] = np.frombuffer(data, dtype = get_dtype(header['bitmode'])).reshape(256,512)
+                image[p] = np.frombuffer(data, dtype = get_storage_dtype(header['bitmode'])).reshape(256,512)
         
         image[self.mask[0]] = np.flipud(image[self.mask[0]])
         return image

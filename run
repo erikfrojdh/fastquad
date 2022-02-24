@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+import argparse
+from slsdet import Eiger
+
+
+
+d = Eiger()s
+d.fwrite = False
+d.exptime = 245e-6
+d.period = 250e-6
+d.frames = 2**30 # a lot...
+
+d.startReceiver()
+d.startDetector()
