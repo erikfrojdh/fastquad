@@ -37,7 +37,7 @@ ports = [30001, 30003]
 
 def read_stream(buffer, exit_flag):
     """Read images from the receiver zmq stream"""
-    zmq_receiver = QuadZmqReceiver(ip, ports)
+    zmq_receiver = QuadZmqReceiver(ip, ports, timeout_ms = 100)
     while not exit_flag.value:
         #Try to read an image, if timeout then try again
         try:
